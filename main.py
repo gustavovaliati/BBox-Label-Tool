@@ -7,8 +7,8 @@
 #
 #-------------------------------------------------------------------------------
 from __future__ import division
-from Tkinter import *
-import tkMessageBox
+# from Tkinter import *
+from tkinter import *
 from PIL import Image, ImageTk
 import os
 import glob
@@ -34,6 +34,7 @@ class LabelTool():
         self.egDir = ''
         self.egList = []
         self.outDir = ''
+        self.darknetOutDir = ''
         self.cur = 0
         self.total = 0
         self.category = 0
@@ -131,9 +132,9 @@ class LabelTool():
 ##            return
         # get image list
         self.imageDir = os.path.join(r'./Images', '%03d' %(self.category))
-        self.imageList = glob.glob(os.path.join(self.imageDir, '*.JPEG'))
+        self.imageList = glob.glob(os.path.join(self.imageDir, '*.jpg'))
         if len(self.imageList) == 0:
-            print 'No .JPEG images found in the specified dir!'
+            print('No .jpg images found in the specified dir!')
             return
 
         # default to the 1st image in the collection
@@ -145,26 +146,34 @@ class LabelTool():
         if not os.path.exists(self.outDir):
             os.mkdir(self.outDir)
 
-        # load example bboxes
-        self.egDir = os.path.join(r'./Examples', '%03d' %(self.category))
-        if not os.path.exists(self.egDir):
-            return
-        filelist = glob.glob(os.path.join(self.egDir, '*.JPEG'))
-        self.tmp = []
-        self.egList = []
-        random.shuffle(filelist)
-        for (i, f) in enumerate(filelist):
-            if i == 3:
-                break
-            im = Image.open(f)
-            r = min(SIZE[0] / im.size[0], SIZE[1] / im.size[1])
-            new_size = int(r * im.size[0]), int(r * im.size[1])
-            self.tmp.append(im.resize(new_size, Image.ANTIALIAS))
-            self.egList.append(ImageTk.PhotoImage(self.tmp[-1]))
-            self.egLabels[i].config(image = self.egList[-1], width = SIZE[0], height = SIZE[1])
+        # darknet labels dir
+        darknetdir = './Labels-darknet'
+        if not os.path.exists(darknetdir):
+            os.mkdir(darknetdir)
+        self.darknetOutDir = os.path.join(darknetdir, '%03d' %(self.category))
+        if not os.path.exists(self.darknetOutDir):
+            os.mkdir(self.darknetOutDir)
+
+        # # load example bboxes
+        # self.egDir = os.path.join(r'./Examples', '%03d' %(self.category))
+        # if not os.path.exists(self.egDir):
+        #     return
+        # filelist = glob.glob(os.path.join(self.egDir, '*.jpg'))
+        # self.tmp = []
+        # self.egList = []
+        # random.shuffle(filelist)
+        # for (i, f) in enumerate(filelist):
+        #     if i == 3:
+        #         break
+        #     im = Image.open(f)
+        #     r = min(SIZE[0] / im.size[0], SIZE[1] / im.size[1])
+        #     new_size = int(r * im.size[0]), int(r * im.size[1])
+        #     self.tmp.append(im.resize(new_size, Image.ANTIALIAS))
+        #     self.egList.append(ImageTk.PhotoImage(self.tmp[-1]))
+        #     self.egLabels[i].config(image = self.egList[-1], width = SIZE[0], height = SIZE[1])
 
         self.loadImage()
-        print '%d images loaded from %s' %(self.total, s)
+        print('%d images loaded from %s' %(self.total, s))
 
     def loadImage(self):
         # load image
@@ -180,6 +189,7 @@ class LabelTool():
         self.imagename = os.path.split(imagepath)[-1].split('.')[0]
         labelname = self.imagename + '.txt'
         self.labelfilename = os.path.join(self.outDir, labelname)
+        self.darknetfilename = os.path.join(self.darknetOutDir, labelname)
         bbox_cnt = 0
         if os.path.exists(self.labelfilename):
             with open(self.labelfilename) as f:
@@ -200,10 +210,16 @@ class LabelTool():
 
     def saveImage(self):
         with open(self.labelfilename, 'w') as f:
+            print(self.labelfilename)
             f.write('%d\n' %len(self.bboxList))
             for bbox in self.bboxList:
                 f.write(' '.join(map(str, bbox)) + '\n')
-        print 'Image No. %d saved' %(self.cur)
+        with open(self.darknetfilename, 'w') as f:
+            print(self.darknetfilename)
+            f.write('%d\n' %len(self.bboxList))
+            for bbox in self.bboxList:
+                f.write(' '.join(map(str, bbox)) + '\n')
+        print('Image No. %d saved' %(self.cur))
 
 
     def mouseClick(self, event):
@@ -279,7 +295,7 @@ class LabelTool():
             self.cur = idx
             self.loadImage()
 
-##    def setImage(self, imagepath = r'test2.png'):
+##    def setImage(self, imagepath = r'test2.jpg'):
 ##        self.img = Image.open(imagepath)
 ##        self.tkimg = ImageTk.PhotoImage(self.img)
 ##        self.mainPanel.config(width = self.tkimg.width())
