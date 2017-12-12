@@ -33,8 +33,8 @@ class LabelTool():
         self.imageList= []
         self.egDir = ''
         self.egList = []
-        self.outDir = ''
-        self.darknetOutDir = ''
+        # self.outDir = ''
+        # self.darknetOutDir = ''
         self.cur = 0
         self.total = 0
         self.category = 0
@@ -136,24 +136,32 @@ class LabelTool():
         if len(self.imageList) == 0:
             print('No .jpg images found in the specified dir!')
             return
-        print(self.imageList)
+        # print(self.imageList)
 
         # default to the 1st image in the collection
         self.cur = 1
         self.total = len(self.imageList)
 
          # set up output dir
-        self.outDir = os.path.join(r'./Labels', '%03d' %(self.category))
-        if not os.path.exists(self.outDir):
-            os.mkdir(self.outDir)
+        self.labelsdir = './Labels'
+        if not os.path.exists(self.labelsdir):
+            os.mkdir(self.labelsdir)
+        # self.outDir = os.path.join(self.labelsdir, '%03d' %(self.category))
+        # if not os.path.exists(self.outDir):
+            # os.mkdir(self.outDir)
 
         # darknet labels dir
-        darknetdir = './Labels-darknet'
-        if not os.path.exists(darknetdir):
-            os.mkdir(darknetdir)
-        self.darknetOutDir = os.path.join(darknetdir, '%03d' %(self.category))
-        if not os.path.exists(self.darknetOutDir):
-            os.mkdir(self.darknetOutDir)
+        self.darknetdir = './Labels-darknet'
+        if not os.path.exists(self.darknetdir):
+            os.mkdir(self.darknetdir)
+        # self.darknetOutDir = os.path.join(self.darknetdir, '%03d' %(self.category))
+        # if not os.path.exists(self.darknetOutDir):
+        #     os.mkdir(self.darknetOutDir)
+
+        # darknet labels dir
+        self.metadir = './meta'
+        if not os.path.exists(self.metadir):
+            os.mkdir(self.metadir)
 
         # # load example bboxes
         # self.egDir = os.path.join(r'./Examples', '%03d' %(self.category))
@@ -178,8 +186,8 @@ class LabelTool():
 
     def loadImage(self):
         # load image
-        imagepath = self.imageList[self.cur - 1]
-        self.img = Image.open(imagepath)
+        self.imagepath = self.imageList[self.cur - 1]
+        self.img = Image.open(self.imagepath)
         self.tkimg = ImageTk.PhotoImage(self.img)
         self.mainPanel.config(width = max(self.tkimg.width(), 400), height = max(self.tkimg.height(), 400))
         self.mainPanel.create_image(0, 0, image = self.tkimg, anchor=NW)
@@ -187,10 +195,11 @@ class LabelTool():
 
         # load labels
         self.clearBBox()
-        self.imagename = os.path.split(imagepath)[-1].split('.')[0]
+        self.imagename = os.path.split(self.imagepath)[-1].split('.')[0]
         labelname = self.imagename + '.txt'
-        self.labelfilename = os.path.join(self.outDir, labelname)
-        self.darknetfilename = os.path.join(self.darknetOutDir, labelname)
+        self.dirspath = os.path.split(self.imagepath)[0]
+        self.labelfilename = os.path.join(self.labelsdir, self.dirspath, labelname)
+        self.darknetfilename = os.path.join(self.darknetdir, self.dirspath, labelname)
         bbox_cnt = 0
         if os.path.exists(self.labelfilename):
             with open(self.labelfilename) as f:
@@ -233,18 +242,35 @@ class LabelTool():
         w = w*dw
         y = y*dh
         h = h*dh
+        # print(x,y,w,h)
+        return '{} {} {} {}'.format(x,y,w,h)
 
-        return '%f %f %f %f' % (x,y,w,h)
+    def saveMeta(self):
+        #register image by class count
+        fileName = "classcount_{}.txt".format(len(self.bboxList))
+        classCountFile = os.path.join(self.metadir, fileName)
+        with open(classCountFile, 'a') as f:
+            f.write("{}\n".format(self.imagepath))
+
+    def prepareFileDirs(self):
+        labelsdirpath = os.path.join(self.labelsdir, self.dirspath)
+        os.makedirs(labelsdirpath, exist_ok=True)
+        darknetdirspath = os.path.join(self.darknetdir, self.dirspath)
+        os.makedirs(darknetdirspath, exist_ok=True)
 
     def saveImage(self):
+        self.prepareFileDirs();
+
         with open(self.labelfilename, 'w') as f:
-            f.write('%d\n' %len(self.bboxList))
+            f.write('%d\n' % len(self.bboxList))
             for bbox in self.bboxList:
                 f.write(' '.join(map(str, bbox)) + '\n')
 
         with open(self.darknetfilename, 'w') as f:
             for bbox in self.bboxList:
                 f.write('0 ' + self.convert(bbox=bbox) + '\n') # static class '0'.
+
+        self.saveMeta()
 
         print('Image No. %d saved' %(self.cur))
 
@@ -322,8 +348,8 @@ class LabelTool():
             self.cur = idx
             self.loadImage()
 
-##    def setImage(self, imagepath = r'test2.jpg'):
-##        self.img = Image.open(imagepath)
+##    def setImage(self, self.imagepath = r'test2.jpg'):
+##        self.img = Image.open(self.imagepath)
 ##        self.tkimg = ImageTk.PhotoImage(self.img)
 ##        self.mainPanel.config(width = self.tkimg.width())
 ##        self.mainPanel.config(height = self.tkimg.height())
