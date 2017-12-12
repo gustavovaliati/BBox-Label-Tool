@@ -132,10 +132,11 @@ class LabelTool():
 ##            return
         # get image list
         self.imageDir = os.path.join(r'./Images', '%03d' %(self.category))
-        self.imageList = glob.glob(os.path.join(self.imageDir, '*.jpg'))
+        self.imageList = glob.glob(os.path.join(self.imageDir, '**/*.jpg'), recursive=True)
         if len(self.imageList) == 0:
             print('No .jpg images found in the specified dir!')
             return
+        print(self.imageList)
 
         # default to the 1st image in the collection
         self.cur = 1
@@ -208,17 +209,43 @@ class LabelTool():
                     self.listbox.insert(END, '(%d, %d) -> (%d, %d)' %(tmp[0], tmp[1], tmp[2], tmp[3]))
                     self.listbox.itemconfig(len(self.bboxIdList) - 1, fg = COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
 
+
+    def convert(self, bbox):
+        '''
+        Reference: https://github.com/Guanghan/darknet/blob/master/scripts/convert.py
+        '''
+
+        im_w=640 # static width
+        im_h=480 # static height
+
+        xmin = float(bbox[0])
+        xmax = float(bbox[2])
+        ymin = float(bbox[1])
+        ymax = float(bbox[3])
+
+        dw = 1./im_w
+        dh = 1./im_h
+        x = (xmin + xmax)/2.0
+        y = (ymin + ymax)/2.0
+        w = xmax - xmin
+        h = ymax - ymin
+        x = x*dw
+        w = w*dw
+        y = y*dh
+        h = h*dh
+
+        return '%f %f %f %f' % (x,y,w,h)
+
     def saveImage(self):
         with open(self.labelfilename, 'w') as f:
-            print(self.labelfilename)
             f.write('%d\n' %len(self.bboxList))
             for bbox in self.bboxList:
                 f.write(' '.join(map(str, bbox)) + '\n')
+
         with open(self.darknetfilename, 'w') as f:
-            print(self.darknetfilename)
-            f.write('%d\n' %len(self.bboxList))
             for bbox in self.bboxList:
-                f.write(' '.join(map(str, bbox)) + '\n')
+                f.write('0 ' + self.convert(bbox=bbox) + '\n') # static class '0'.
+
         print('Image No. %d saved' %(self.cur))
 
 
