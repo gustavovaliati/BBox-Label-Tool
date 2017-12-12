@@ -270,7 +270,7 @@ class LabelTool():
             for bbox in self.bboxList:
                 f.write('0 ' + self.convert(bbox=bbox) + '\n') # static class '0'.
 
-        self.saveMeta()
+        # self.saveMeta()
 
         print('Image No. %d saved' %(self.cur))
 
