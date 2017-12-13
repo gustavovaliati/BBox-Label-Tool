@@ -28,7 +28,7 @@ for lfile in labelsList:
 
 for lcount in metaDic:
     labelList = metaDic[lcount]
-
+    print("{} frames with {} bboxes. ".format(len(labelList), lcount))
     fbboxcountname = "bbox_number_{}.txt".format(lcount)
     fbboxcount = os.path.join(metadir, fbboxcountname)
     with open(fbboxcount, 'w') as f:
