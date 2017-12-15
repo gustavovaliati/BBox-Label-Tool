@@ -71,6 +71,7 @@ class LabelTool():
         self.parent.bind("s", self.cancelBBox)
         self.parent.bind("a", self.prevImage) # press 'a' to go backforward
         self.parent.bind("d", self.nextImage) # press 'd' to go forward
+        self.parent.bind("z", self.deleteLastBBox) #delete the last bbox from the list
         self.mainPanel.grid(row = 1, column = 1, rowspan = 4, sticky = W+N)
 
         # showing bbox info & delete bbox
@@ -215,17 +216,17 @@ class LabelTool():
                                                             width = 2, \
                                                             outline = COLORS[(len(self.bboxList)-1) % len(COLORS)])
                     self.bboxIdList.append(tmpId)
-                    self.listbox.insert(END, '(%d, %d) -> (%d, %d)' %(tmp[0], tmp[1], tmp[2], tmp[3]))
+                    self.listbox.insert(END, '%d: (%d, %d) -> (%d, %d)' %(i, tmp[0], tmp[1], tmp[2], tmp[3]))
                     self.listbox.itemconfig(len(self.bboxIdList) - 1, fg = COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
 
 
     def convert(self, bbox):
         '''
-        Reference: https://github.com/Guanghan/darknet/blob/master/scripts/convert.py
+        References:
+        - https://github.com/Guanghan/darknet/blob/master/scripts/convert.py
+        - https://github.com/AlexeyAB/darknet
         '''
-
-        im_w=640 # static width
-        im_h=480 # static height
+        im_w, im_h = self.img.size
 
         xmin = float(bbox[0])
         xmax = float(bbox[2])
@@ -284,7 +285,7 @@ class LabelTool():
             self.bboxList.append((x1, y1, x2, y2))
             self.bboxIdList.append(self.bboxId)
             self.bboxId = None
-            self.listbox.insert(END, '(%d, %d) -> (%d, %d)' %(x1, y1, x2, y2))
+            self.listbox.insert(END, '%d: (%d, %d) -> (%d, %d)' %(len(self.bboxIdList),x1, y1, x2, y2))
             self.listbox.itemconfig(len(self.bboxIdList) - 1, fg = COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
         self.STATE['click'] = 1 - self.STATE['click']
 
@@ -312,15 +313,25 @@ class LabelTool():
                 self.bboxId = None
                 self.STATE['click'] = 0
 
+    def deleteLastBBox(self, event):
+        bboxlen = len(self.bboxIdList)
+        if bboxlen == 0:
+            return
+        idx = bboxlen - 1
+        self.delBBoxByIndex(idx)
+
+    def delBBoxByIndex(self, idx):
+        self.mainPanel.delete(self.bboxIdList[idx])
+        self.bboxIdList.pop(idx)
+        self.bboxList.pop(idx)
+        self.listbox.delete(idx)
+
     def delBBox(self):
         sel = self.listbox.curselection()
         if len(sel) != 1 :
             return
         idx = int(sel[0])
-        self.mainPanel.delete(self.bboxIdList[idx])
-        self.bboxIdList.pop(idx)
-        self.bboxList.pop(idx)
-        self.listbox.delete(idx)
+        self.delBBoxByIndex(idx)
 
     def clearBBox(self):
         for idx in range(len(self.bboxIdList)):
