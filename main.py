@@ -273,7 +273,7 @@ class LabelTool():
 
         # self.saveMeta()
 
-        print('Image No. %d saved' %(self.cur))
+        print('Image No. {} saved. Path: {}'.format(self.cur, self.imagepath))
 
 
     def mouseClick(self, event):

@@ -8,7 +8,7 @@ if not os.path.exists(darknetdir):
     sys.exit()
 
 if not os.path.exists(metadir):
-    os.path.mkdir(metadir)
+    os.mkdir(metadir)
 
 
 labelsList = glob.glob(os.path.join(darknetdir, '**/*.txt'), recursive=True)
@@ -26,11 +26,18 @@ for lfile in labelsList:
             metaDic[lcount] = []
         metaDic[lcount].append(lfile)
 
+totalLabeled = 0
+totalBBoxes = 0
 for lcount in metaDic:
     labelList = metaDic[lcount]
+    if lcount > 0:
+        totalLabeled = totalLabeled + len(labelList)
+        totalBBoxes = totalBBoxes + (lcount * len(labelList))
     print("{} frames with {} bboxes. ".format(len(labelList), lcount))
     fbboxcountname = "bbox_number_{}.txt".format(lcount)
     fbboxcount = os.path.join(metadir, fbboxcountname)
     with open(fbboxcount, 'w') as f:
         for l in labelList:
             f.write(l + '\n')
+print("Total of labeled frames: {}. Ps: Frames with zero bboxes does not count.".format(totalLabeled))
+print("Total of bounding boxes: {}.".format(totalBBoxes))
