@@ -10,9 +10,7 @@ from __future__ import division
 # from Tkinter import *
 from tkinter import *
 from PIL import Image, ImageTk
-import os
-import glob
-import random
+import os, shutil, glob, random
 
 # colors for the bboxes
 COLORS = ['red', 'blue', 'yellow', 'pink', 'cyan', 'green', 'black']
@@ -27,6 +25,8 @@ class LabelTool():
         self.frame = Frame(self.parent)
         self.frame.pack(fill=BOTH, expand=1)
         self.parent.resizable(width = FALSE, height = FALSE)
+        self.hivedir = './thehive'
+        self.hivecount = 0
 
         # initialize global state
         self.imageDir = ''
@@ -75,6 +75,7 @@ class LabelTool():
         self.parent.bind("a", self.prevImage) # press 'a' to go backforward
         self.parent.bind("d", self.nextImage) # press 'd' to go forward
         self.parent.bind("z", self.deleteLastBBox) #delete the last bbox from the list
+        self.parent.bind("h", self.sendToTheHive)
         self.mainPanel.grid(row = 1, column = 1, rowspan = 4, sticky = W+N)
 
         # showing bbox info & delete bbox
@@ -84,12 +85,14 @@ class LabelTool():
         self.listbox.grid(row = 3, column = 2, sticky = N)
         self.btnDel = Button(self.frame, text = 'Delete', command = self.delBBox)
         self.btnDel.grid(row = 4, column = 2, sticky = W+E+N)
+        self.btnHive = Button(self.frame, text='Hive', command = self.sendToTheHive)
+        self.btnHive.grid(row = 5, column = 2, sticky = W+E+N)
         self.btnClear = Button(self.frame, text = 'ClearAll', command = self.clearBBox)
-        self.btnClear.grid(row = 5, column = 2, sticky = W+E+N)
+        self.btnClear.grid(row = 6, column = 2, sticky = W+E+N)
 
         # control panel for image navigation
         self.ctrPanel = Frame(self.frame)
-        self.ctrPanel.grid(row = 6, column = 1, columnspan = 2, sticky = W+E)
+        self.ctrPanel.grid(row = 7, column = 1, columnspan = 2, sticky = W+E)
         self.prevBtn = Button(self.ctrPanel, text='<< Prev', width = 10, command = self.prevImage)
         self.prevBtn.pack(side = LEFT, padx = 5, pady = 3)
         self.nextBtn = Button(self.ctrPanel, text='Next >>', width = 10, command = self.nextImage)
@@ -339,6 +342,18 @@ class LabelTool():
             return
         idx = int(sel[0])
         self.delBBoxByIndex(idx)
+
+    def sendToTheHive(self, event = None):
+        if not os.path.exists(self.hivedir):
+            os.mkdir(self.hivedir)
+
+        new_image_name = self.imagepath.replace('./','')
+        new_image_name = new_image_name.replace('/','_')
+        new_path = os.path.join(self.hivedir, new_image_name)
+        shutil.copy(self.imagepath, new_path)
+        self.hivecount += 1
+        print("{}. Sent {} to {}.".format(self.hivecount, new_path, self.hivedir))
+
 
     def clearBBox(self):
         for idx in range(len(self.bboxIdList)):
