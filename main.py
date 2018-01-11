@@ -42,6 +42,7 @@ class LabelTool():
         self.labelfilename = ''
         self.tkimg = None
         self.orderImageList = BooleanVar()
+        self.noBboxes = BooleanVar()
 
         # initialize mouse state
         self.STATE = {}
@@ -76,6 +77,7 @@ class LabelTool():
         self.parent.bind("d", self.nextImage) # press 'd' to go forward
         self.parent.bind("z", self.deleteLastBBox) #delete the last bbox from the list
         self.parent.bind("h", self.sendToTheHive)
+        self.parent.bind("p", self.toggleNoBboxes)
         self.mainPanel.grid(row = 1, column = 1, rowspan = 4, sticky = W+N)
 
         # showing bbox info & delete bbox
@@ -83,16 +85,18 @@ class LabelTool():
         self.lb1.grid(row = 2, column = 2,  sticky = W+N)
         self.listbox = Listbox(self.frame, width = 22, height = 12)
         self.listbox.grid(row = 3, column = 2, sticky = N)
-        self.btnDel = Button(self.frame, text = 'Delete', command = self.delBBox)
-        self.btnDel.grid(row = 4, column = 2, sticky = W+E+N)
+        self.checkbuttonNobboxes = Checkbutton(self.frame, text = "No bboxes", variable = self.noBboxes)
+        self.checkbuttonNobboxes.grid(row = 4, column = 2, sticky = W+N)
         self.btnHive = Button(self.frame, text='Hive', command = self.sendToTheHive)
         self.btnHive.grid(row = 5, column = 2, sticky = W+E+N)
+        self.btnDel = Button(self.frame, text = 'Delete', command = self.delBBox)
+        self.btnDel.grid(row = 6, column = 2, sticky = W+E+N)
         self.btnClear = Button(self.frame, text = 'ClearAll', command = self.clearBBox)
-        self.btnClear.grid(row = 6, column = 2, sticky = W+E+N)
+        self.btnClear.grid(row = 7, column = 2, sticky = W+E+N)
 
         # control panel for image navigation
         self.ctrPanel = Frame(self.frame)
-        self.ctrPanel.grid(row = 7, column = 1, columnspan = 2, sticky = W+E)
+        self.ctrPanel.grid(row = 8, column = 1, columnspan = 2, sticky = W+E)
         self.prevBtn = Button(self.ctrPanel, text='<< Prev', width = 10, command = self.prevImage)
         self.prevBtn.pack(side = LEFT, padx = 5, pady = 3)
         self.nextBtn = Button(self.ctrPanel, text='Next >>', width = 10, command = self.nextImage)
@@ -194,6 +198,8 @@ class LabelTool():
 
         self.loadImage()
         print('%d images loaded from %s' %(self.total, s))
+    def toggleNoBboxes(self, event=None):
+        self.noBboxes.set( not self.noBboxes.get() )
 
     def loadImage(self):
         # load image
@@ -213,10 +219,15 @@ class LabelTool():
         self.darknetfilename = os.path.join(self.darknetdir, self.dirspath, labelname)
         bbox_cnt = 0
         if os.path.exists(self.labelfilename):
+
             with open(self.labelfilename) as f:
                 for (i, line) in enumerate(f):
                     if i == 0:
                         bbox_cnt = int(line.strip())
+                        if bbox_cnt > 0:
+                            self.noBboxes.set(False)
+                        else:
+                            self.noBboxes.set(True)
                         continue
                     tmp = [int(t.strip()) for t in line.split()]
 ##                    print tmp
@@ -228,7 +239,8 @@ class LabelTool():
                     self.bboxIdList.append(tmpId)
                     self.listbox.insert(END, '%d: (%d, %d) -> (%d, %d)' %(i, tmp[0], tmp[1], tmp[2], tmp[3]))
                     self.listbox.itemconfig(len(self.bboxIdList) - 1, fg = COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
-
+        else:
+            self.noBboxes.set(False)
 
     def convert(self, bbox):
         '''
@@ -270,20 +282,32 @@ class LabelTool():
         os.makedirs(darknetdirspath, exist_ok=True)
 
     def saveImage(self):
-        self.prepareFileDirs();
+        if len(self.bboxList) > 0 or self.noBboxes.get():
+            self.prepareFileDirs();
 
-        with open(self.labelfilename, 'w') as f:
-            f.write('%d\n' % len(self.bboxList))
-            for bbox in self.bboxList:
-                f.write(' '.join(map(str, bbox)) + '\n')
+            with open(self.labelfilename, 'w') as f:
+                f.write('%d\n' % len(self.bboxList))
+                for bbox in self.bboxList:
+                    f.write(' '.join(map(str, bbox)) + '\n')
 
-        with open(self.darknetfilename, 'w') as f:
-            for bbox in self.bboxList:
-                f.write('0 ' + self.convert(bbox=bbox) + '\n') # static class '0'.
+            with open(self.darknetfilename, 'w') as f:
+                for bbox in self.bboxList:
+                    f.write('0 ' + self.convert(bbox=bbox) + '\n') # static class '0'.
 
-        # self.saveMeta()
+            # self.saveMeta()
 
-        print('Image No. {} saved. Path: {}'.format(self.cur, self.imagepath))
+            print('Image No. {} saved. Path: {}'.format(self.cur, self.imagepath))
+        else:
+            print('Skipping: Image No. {} saved. Path: {}. You should draw bboxes or mark as [No BBoxes]'.format(self.cur, self.imagepath))
+
+            if os.path.exists(self.labelfilename):
+                print('Also: Removing the existing label file.')
+                os.remove(self.labelfilename)
+
+            if os.path.exists(self.darknetfilename):
+                print('Also: Removing the existing darknet label file.')
+                os.remove(self.darknetfilename)
+
 
 
     def mouseClick(self, event):
@@ -363,18 +387,30 @@ class LabelTool():
         self.bboxList = []
 
     def prevImage(self, event = None):
+        if self.noBboxes.get() and len(self.bboxList) > 0:
+            print('Conflict: Marked as [No BBoxes] but has bboxes in the list.')
+            return
+
         self.saveImage()
         if self.cur > 1:
             self.cur -= 1
             self.loadImage()
 
     def nextImage(self, event = None):
+        if self.noBboxes.get() and len(self.bboxList) > 0:
+            print('Conflict: Marked as [No BBoxes] but has bboxes in the list.')
+            return
+
         self.saveImage()
         if self.cur < self.total:
             self.cur += 1
             self.loadImage()
 
     def gotoImage(self):
+        if self.noBboxes.get() and len(self.bboxList) > 0:
+            print('Conflict: Marked as [No BBoxes] but has bboxes in the list.')
+            return
+
         idx = int(self.idxEntry.get())
         if 1 <= idx and idx <= self.total:
             self.saveImage()
