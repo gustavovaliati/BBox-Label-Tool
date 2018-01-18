@@ -43,6 +43,7 @@ class LabelTool():
         self.tkimg = None
         self.orderImageList = BooleanVar()
         self.noBboxes = BooleanVar()
+        self.hideOtherBboxes = BooleanVar()
 
         # initialize mouse state
         self.STATE = {}
@@ -75,9 +76,13 @@ class LabelTool():
         self.parent.bind("s", self.cancelBBox)
         self.parent.bind("a", self.prevImage) # press 'a' to go backforward
         self.parent.bind("d", self.nextImage) # press 'd' to go forward
+        self.parent.bind("<Left>", self.prevImage)
+        self.parent.bind("<Right>", self.nextImage)
         self.parent.bind("z", self.deleteLastBBox) #delete the last bbox from the list
         self.parent.bind("h", self.sendToTheHive)
         self.parent.bind("p", self.toggleNoBboxes)
+        self.parent.bind("f", self.toggleHideOtherBboxes)
+        self.parent.bind("m", self.setManualBBox)
         self.mainPanel.grid(row = 1, column = 1, rowspan = 4, sticky = W+N)
 
         # showing bbox info & delete bbox
@@ -87,16 +92,22 @@ class LabelTool():
         self.listbox.grid(row = 3, column = 2, sticky = N)
         self.checkbuttonNobboxes = Checkbutton(self.frame, text = "No bboxes", variable = self.noBboxes)
         self.checkbuttonNobboxes.grid(row = 4, column = 2, sticky = W+N)
+        self.checkbHideOthersBboxes = Checkbutton(self.frame, text = "Hide other bboxes", variable = self.hideOtherBboxes)
+        self.checkbHideOthersBboxes.grid(row = 5, column = 2, sticky = W+N)
+        self.setManualBBoxEntry = Entry(self.frame, width = 20)
+        self.setManualBBoxEntry.grid(row = 6, column = 2, sticky = W+N)
+        self.btnSetManualBbox = Button(self.frame, text='Manual BBox', command = self.setManualBBox)
+        self.btnSetManualBbox.grid(row = 7, column = 2, sticky = W+E+N)
         self.btnHive = Button(self.frame, text='Hive', command = self.sendToTheHive)
-        self.btnHive.grid(row = 5, column = 2, sticky = W+E+N)
+        self.btnHive.grid(row = 8, column = 2, sticky = W+E+N)
         self.btnDel = Button(self.frame, text = 'Delete', command = self.delBBox)
-        self.btnDel.grid(row = 6, column = 2, sticky = W+E+N)
+        self.btnDel.grid(row = 9, column = 2, sticky = W+E+N)
         self.btnClear = Button(self.frame, text = 'ClearAll', command = self.clearBBox)
-        self.btnClear.grid(row = 7, column = 2, sticky = W+E+N)
+        self.btnClear.grid(row = 10, column = 2, sticky = W+E+N)
 
         # control panel for image navigation
         self.ctrPanel = Frame(self.frame)
-        self.ctrPanel.grid(row = 8, column = 1, columnspan = 2, sticky = W+E)
+        self.ctrPanel.grid(row = 11, column = 1, columnspan = 2, sticky = W+E)
         self.prevBtn = Button(self.ctrPanel, text='<< Prev', width = 10, command = self.prevImage)
         self.prevBtn.pack(side = LEFT, padx = 5, pady = 3)
         self.nextBtn = Button(self.ctrPanel, text='Next >>', width = 10, command = self.nextImage)
@@ -198,8 +209,29 @@ class LabelTool():
 
         self.loadImage()
         print('%d images loaded from %s' %(self.total, s))
+
     def toggleNoBboxes(self, event=None):
         self.noBboxes.set( not self.noBboxes.get() )
+
+    def toggleHideOtherBboxes(self, event=None):
+        print('teste')
+        self.hideOtherBboxes.set( not self.hideOtherBboxes.get() )
+        self.loadImage()
+
+    def setManualBBox(self, event=None):
+        tmp = [int(t.strip()) for t in self.setManualBBoxEntry.get().split()]
+        if(len(tmp) == 4):
+            self.bboxList.append(tuple(tmp))
+
+            tmpId = self.mainPanel.create_rectangle(tmp[0], tmp[1], \
+                                                        tmp[2], tmp[3], \
+                                                        width = 1, \
+                                                        outline = COLORS[(len(self.bboxList)-1) % len(COLORS)])
+            self.bboxIdList.append(tmpId)
+            print(len(self.bboxIdList))
+            self.listbox.insert(END, '%d: (%d, %d) -> (%d, %d)' %(len(self.bboxIdList), tmp[0], tmp[1], tmp[2], tmp[3]))
+            self.listbox.itemconfig(len(self.bboxList) - 1, fg = COLORS[(len(self.bboxList) - 1) % len(COLORS)])
+
 
     def loadImage(self):
         # load image
@@ -232,13 +264,14 @@ class LabelTool():
                     tmp = [int(t.strip()) for t in line.split()]
 ##                    print tmp
                     self.bboxList.append(tuple(tmp))
-                    tmpId = self.mainPanel.create_rectangle(tmp[0], tmp[1], \
-                                                            tmp[2], tmp[3], \
-                                                            width = 2, \
-                                                            outline = COLORS[(len(self.bboxList)-1) % len(COLORS)])
-                    self.bboxIdList.append(tmpId)
+                    if not self.hideOtherBboxes.get():
+                        tmpId = self.mainPanel.create_rectangle(tmp[0], tmp[1], \
+                                                                tmp[2], tmp[3], \
+                                                                width = 1, \
+                                                                outline = COLORS[(len(self.bboxList)-1) % len(COLORS)])
+                        self.bboxIdList.append(tmpId)
                     self.listbox.insert(END, '%d: (%d, %d) -> (%d, %d)' %(i, tmp[0], tmp[1], tmp[2], tmp[3]))
-                    self.listbox.itemconfig(len(self.bboxIdList) - 1, fg = COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
+                    self.listbox.itemconfig(len(self.bboxList) - 1, fg = COLORS[(len(self.bboxList) - 1) % len(COLORS)])
         else:
             self.noBboxes.set(False)
 
@@ -296,9 +329,9 @@ class LabelTool():
 
             # self.saveMeta()
 
-            print('Image No. {} saved. Path: {}'.format(self.cur, self.imagepath))
+            print('Image {} label saved. Path: {}'.format(self.cur, self.imagepath))
         else:
-            print('Skipping: Image No. {} saved. Path: {}. You should draw bboxes or mark as [No BBoxes]'.format(self.cur, self.imagepath))
+            print('Skipping: Image {}. You should draw bboxes or mark as [No BBoxes]. Path: {}.'.format(self.cur, self.imagepath))
 
             if os.path.exists(self.labelfilename):
                 print('Also: Removing the existing label file.')
@@ -328,16 +361,16 @@ class LabelTool():
         if self.tkimg:
             if self.hl:
                 self.mainPanel.delete(self.hl)
-            self.hl = self.mainPanel.create_line(0, event.y, self.tkimg.width(), event.y, width = 2)
+            self.hl = self.mainPanel.create_line(0, event.y, self.tkimg.width(), event.y, width = 1)
             if self.vl:
                 self.mainPanel.delete(self.vl)
-            self.vl = self.mainPanel.create_line(event.x, 0, event.x, self.tkimg.height(), width = 2)
+            self.vl = self.mainPanel.create_line(event.x, 0, event.x, self.tkimg.height(), width = 1)
         if 1 == self.STATE['click']:
             if self.bboxId:
                 self.mainPanel.delete(self.bboxId)
             self.bboxId = self.mainPanel.create_rectangle(self.STATE['x'], self.STATE['y'], \
                                                             event.x, event.y, \
-                                                            width = 2, \
+                                                            width = 1, \
                                                             outline = COLORS[len(self.bboxList) % len(COLORS)])
 
     def cancelBBox(self, event):
