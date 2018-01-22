@@ -83,6 +83,7 @@ class LabelTool():
         self.parent.bind("p", self.toggleNoBboxes)
         self.parent.bind("f", self.toggleHideOtherBboxes)
         self.parent.bind("m", self.setManualBBox)
+        self.parent.bind("o", self.nextNoBboxImage)
         self.mainPanel.grid(row = 1, column = 1, rowspan = 4, sticky = W+N)
 
         # showing bbox info & delete bbox
@@ -98,16 +99,18 @@ class LabelTool():
         self.setManualBBoxEntry.grid(row = 6, column = 2, sticky = W+N)
         self.btnSetManualBbox = Button(self.frame, text='Manual BBox', command = self.setManualBBox)
         self.btnSetManualBbox.grid(row = 7, column = 2, sticky = W+E+N)
+        self.btnNextNoBBox = Button(self.frame, text='Next No-BBox', command = self.nextNoBboxImage)
+        self.btnNextNoBBox.grid(row = 8, column = 2, sticky = W+E+N)
         self.btnHive = Button(self.frame, text='Hive', command = self.sendToTheHive)
-        self.btnHive.grid(row = 8, column = 2, sticky = W+E+N)
+        self.btnHive.grid(row = 9, column = 2, sticky = W+E+N)
         self.btnDel = Button(self.frame, text = 'Delete', command = self.delBBox)
-        self.btnDel.grid(row = 9, column = 2, sticky = W+E+N)
+        self.btnDel.grid(row = 10, column = 2, sticky = W+E+N)
         self.btnClear = Button(self.frame, text = 'ClearAll', command = self.clearBBox)
-        self.btnClear.grid(row = 10, column = 2, sticky = W+E+N)
+        self.btnClear.grid(row = 11, column = 2, sticky = W+E+N)
 
         # control panel for image navigation
         self.ctrPanel = Frame(self.frame)
-        self.ctrPanel.grid(row = 11, column = 1, columnspan = 2, sticky = W+E)
+        self.ctrPanel.grid(row = 12, column = 1, columnspan = 2, sticky = W+E)
         self.prevBtn = Button(self.ctrPanel, text='<< Prev', width = 10, command = self.prevImage)
         self.prevBtn.pack(side = LEFT, padx = 5, pady = 3)
         self.nextBtn = Button(self.ctrPanel, text='Next >>', width = 10, command = self.nextImage)
@@ -275,6 +278,8 @@ class LabelTool():
         else:
             self.noBboxes.set(False)
 
+        return bbox_cnt > 0
+
     def convert(self, bbox):
         '''
         References:
@@ -429,15 +434,29 @@ class LabelTool():
             self.cur -= 1
             self.loadImage()
 
-    def nextImage(self, event = None):
+    def checkNoBboxConflict(self):
         if self.noBboxes.get() and len(self.bboxList) > 0:
             print('Conflict: Marked as [No BBoxes] but has bboxes in the list.')
+            return True
+        return False
+
+    def nextImage(self, event = None):
+        if self.checkNoBboxConflict():
             return
 
         self.saveImage()
         if self.cur < self.total:
             self.cur += 1
             self.loadImage()
+
+    def nextNoBboxImage(self, event = None):
+        self.btnNextNoBBox.config(state="disabled")
+        while True:
+            self.nextImage()
+            if len(self.bboxList) == 0 or self.cur >= self.total or self.checkNoBboxConflict():
+                self.btnNextNoBBox.config(state="normal")
+                return
+
 
     def gotoImage(self):
         if self.noBboxes.get() and len(self.bboxList) > 0:
