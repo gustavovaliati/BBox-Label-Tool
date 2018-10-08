@@ -28,7 +28,7 @@ class LabelTool():
         self.parent.title("LabelTool")
         self.frame = Frame(self.parent)
         self.frame.pack(fill=BOTH, expand=1)
-        self.parent.resizable(width = FALSE, height = FALSE)
+        self.parent.resizable(width = True, height = True)
         self.hivedir = './thehive'
         self.hivecount = 0
 
@@ -38,6 +38,7 @@ class LabelTool():
         self.imageList= []
         self.egDir = ''
         self.egList = []
+        self.currLayoutRow = -1
         # self.outDir = ''
         # self.darknetOutDir = ''
         self.cur = 0
@@ -73,9 +74,9 @@ class LabelTool():
         self.entry.grid(row = 0, column = 1, sticky = W+E)
         self.entry.insert(END, '1')
         self.ldBtn = Button(self.frame, text = "Load", command = self.loadDir)
-        self.ldBtn.grid(row = 0, column = 2, sticky = W+E)
+        self.ldBtn.grid(row = self.getNextLayoutRow(), column = 2, sticky = W+E)
         self.checkbutton = Checkbutton(self.frame, text = "Order Image list", variable = self.orderImageList)
-        self.checkbutton.grid(row = 1, column = 2, sticky = W)
+        self.checkbutton.grid(row = self.getNextLayoutRow(), column = 2, sticky = W)
 
         # main panel for labeling
         self.mainPanel = Canvas(self.frame, cursor='tcross')
@@ -95,41 +96,47 @@ class LabelTool():
         self.parent.bind("f", self.toggleHideOtherBboxes)
         self.parent.bind("m", self.setManualBBox)
         self.parent.bind("o", self.nextNoBboxImage)
-        self.mainPanel.grid(row = 1, column = 1, rowspan = 4, sticky = W+N)
+        self.mainPanel.grid(row = 1, column = 1, rowspan = 10, sticky = W+N)
 
         # showing bbox info & delete bbox
         self.lbCurrClass = Label(self.frame, text = 'New Annot as: None')
-        self.lbCurrClass.grid(row = 2, column = 2,  sticky = W+N)
+        self.lbCurrClass.grid(row = self.getNextLayoutRow(), column = 2,  sticky = W+N)
+
         self.lb1 = Label(self.frame, text = 'Bounding boxes:')
-        self.lb1.grid(row = 3, column = 2,  sticky = W+N)
-        self.listbox = Listbox(self.frame, width = 25, height = 12)
-        self.listbox.grid(row = 4, column = 2, sticky = N)
-        self.listbox.bind('<<ListboxSelect>>', self.listboxSelected)
+        self.lb1.grid(row = self.getNextLayoutRow(), column = 2,  sticky = W+N)
 
         self.checkbuttonNobboxes = Checkbutton(self.frame, text = "No bboxes", variable = self.noBboxes)
-        self.checkbuttonNobboxes.grid(row = 5, column = 2, sticky = W+N)
+        self.checkbuttonNobboxes.grid(row = self.getNextLayoutRow(), column = 2, sticky = W+N)
+        self.listbox = Listbox(self.frame, width = 25, height = 12)
+        self.listbox.grid(row = self.getNextLayoutRow(), column = 2, sticky = N)
+        self.listbox.bind('<<ListboxSelect>>', self.listboxSelected)
+
+        self.btnSetAllBboxClasses = Button(self.frame, text='Update Classes', command = self.setAllBboxClasses)
+        self.btnSetAllBboxClasses.grid(row = self.getNextLayoutRow(), column = 2, sticky = W+E+N)
+
+
         self.lbClassesList = Label(self.frame, text = 'Class List:')
-        self.lbClassesList.grid(row = 6, column = 2,  sticky = W+N)
+        self.lbClassesList.grid(row = self.getNextLayoutRow(), column = 2,  sticky = W+N)
         self.listboxClasses = Listbox(self.frame, width = 22, height = 6)
-        self.listboxClasses.grid(row = 7, column = 2, sticky = N)
+        self.listboxClasses.grid(row = self.getNextLayoutRow(), column = 2, sticky = N)
         self.listboxClasses.bind('<<ListboxSelect>>', self.listboxClassesSelected)
 
         self.checkbHideOthersBboxes = Checkbutton(self.frame, text = "Hide other bboxes", variable = self.hideOtherBboxes)
-        self.checkbHideOthersBboxes.grid(row = 8, column = 2, sticky = W+N)
+        self.checkbHideOthersBboxes.grid(row = self.getNextLayoutRow(), column = 2, sticky = W+N)
         self.setManualBBoxEntry = Entry(self.frame, width = 20)
-        self.setManualBBoxEntry.grid(row = 9, column = 2, sticky = W+N)
+        self.setManualBBoxEntry.grid(row = self.getNextLayoutRow(), column = 2, sticky = W+N)
         self.btnSetManualBbox = Button(self.frame, text='Manual BBox', command = self.setManualBBox)
-        self.btnSetManualBbox.grid(row = 10, column = 2, sticky = W+E+N)
+        self.btnSetManualBbox.grid(row = self.getNextLayoutRow(), column = 2, sticky = W+E+N)
         self.btnNextNoBBox = Button(self.frame, text='Next No-BBox', command = self.nextNoBboxImage)
-        self.btnNextNoBBox.grid(row = 11, column = 2, sticky = W+E+N)
+        self.btnNextNoBBox.grid(row = self.getNextLayoutRow(), column = 2, sticky = W+E+N)
         self.btnDel = Button(self.frame, text = 'Delete', command = self.delBBox)
-        self.btnDel.grid(row = 12, column = 2, sticky = W+E+N)
+        self.btnDel.grid(row = self.getNextLayoutRow(), column = 2, sticky = W+E+N)
         self.btnClear = Button(self.frame, text = 'ClearAll', command = self.clearBBox)
-        self.btnClear.grid(row = 13, column = 2, sticky = W+E+N)
+        self.btnClear.grid(row = self.getNextLayoutRow(), column = 2, sticky = W+E+N)
 
         # control panel for image navigation
         self.ctrPanel = Frame(self.frame)
-        self.ctrPanel.grid(row = 14, column = 1, columnspan = 2, sticky = W+E)
+        self.ctrPanel.grid(row = self.getNextLayoutRow(), column = 1, columnspan = 2, sticky = W+E)
         self.prevBtn = Button(self.ctrPanel, text='<< Prev', width = 10, command = self.prevImage)
         self.prevBtn.pack(side = LEFT, padx = 5, pady = 3)
         self.nextBtn = Button(self.ctrPanel, text='Next >>', width = 10, command = self.nextImage)
@@ -143,16 +150,6 @@ class LabelTool():
         self.goBtn = Button(self.ctrPanel, text = 'Go', command = self.gotoImage)
         self.goBtn.pack(side = LEFT)
 
-        # example pannel for illustration
-        self.egPanel = Frame(self.frame, border = 10)
-        self.egPanel.grid(row = 2, column = 0, rowspan = 5, sticky = N)
-        self.tmpLabel2 = Label(self.egPanel, text = "Examples:")
-        self.tmpLabel2.pack(side = TOP, pady = 5)
-        self.egLabels = []
-        for i in range(3):
-            self.egLabels.append(Label(self.egPanel))
-            self.egLabels[-1].pack(side = TOP)
-
         # display mouse position
         self.disp = Label(self.ctrPanel, text='')
         self.disp.pack(side = RIGHT)
@@ -164,9 +161,9 @@ class LabelTool():
         self.currDefaultBboxClassId = 0
         self.updateMarkingClass(self.currDefaultBboxClassId)
 
-        # for debugging
-##        self.setImage()
-##        self.loadDir()
+    def getNextLayoutRow(self):
+        self.currLayoutRow += 1
+        return self.currLayoutRow
 
     def loadDir(self, dbg = False):
         if not dbg:
@@ -299,7 +296,7 @@ class LabelTool():
 
     def updateMarkingClass(self, classId):
         self.currDefaultBboxClassId = classId
-        print('Changing current class for annotations to', classId)
+        # print('Changing current class for annotations to', classId)
         self.lbCurrClass.config(text='New Annot as: {}'.format(self.classes[classId]))
 
     def setClassPressed(self, classId):
@@ -333,6 +330,23 @@ class LabelTool():
             self.saveImage()
             self.reloadClassList(classId)
             self.reloadBboxListbox()
+
+    def setAllBboxClasses(self):
+        if self.currDefaultBboxClassId >= self.listboxClasses.size():
+            raise Exception('The class does not exist.')
+
+        if self.listbox.size() == 0:
+            return
+
+        for bbox_index in range(self.listbox.size()):
+            bbox = list(self.bboxList[bbox_index])
+            self.bboxList.pop(bbox_index)
+            bbox[4] = self.currDefaultBboxClassId
+            self.bboxList.insert(bbox_index, tuple(bbox))
+            # print(self.bboxList)
+        self.saveImage()
+        self.reloadClassList()
+        self.reloadBboxListbox()
 
     def loadClasses(self, classes_path):
         if not os.path.exists(classes_path):
@@ -372,6 +386,8 @@ class LabelTool():
         self.dirspath = os.path.split(self.imagepath)[0]
         self.labelfilename = os.path.join(self.labelsdir, self.dirspath, labelname)
         self.darknetfilename = os.path.join(self.darknetdir, self.dirspath, labelname)
+
+        self.reloadClassList()
         return self.reloadBboxListbox()
 
     def reloadBboxListbox(self):
@@ -396,15 +412,19 @@ class LabelTool():
                         self.bboxClassList.append(defaultClass)
                     else:
                         self.bboxClassList.append(tmp[4]) #the class is present in the annotation file.
-
-                    self.bboxList.append(tuple(tmp))
+                    x1, y1, x2, y2, classId = tmp
+                    x1 = 0 if x1 < 0 else x1
+                    y1 = 0 if y1 < 0 else y1
+                    x2 = self.tkimg.width()-1 if x2 >= self.tkimg.width() else x2
+                    y2 = self.tkimg.height()-1 if y2 >= self.tkimg.height() else y2
+                    self.bboxList.append(tuple([x1,y1,x2,y2,classId]))
                     if not self.hideOtherBboxes.get():
-                        tmpId = self.mainPanel.create_rectangle(tmp[0], tmp[1], \
-                                                                tmp[2], tmp[3], \
+                        tmpId = self.mainPanel.create_rectangle(x1, y1, \
+                                                                x2, y2, \
                                                                 width = 1, \
                                                                 outline = COLORS[(len(self.bboxList)-1) % len(COLORS)])
                         self.bboxIdList.append(tmpId)
-                    self.listbox.insert(END, '%d: (%d, %d) -> (%d, %d)[%d]' %(i, tmp[0], tmp[1], tmp[2], tmp[3], tmp[4]))
+                    self.listbox.insert(END, '%d: (%d, %d) -> (%d, %d)[%d]' %(i, x1,y1,x2,y2,classId))
                     self.listbox.itemconfig(len(self.bboxList) - 1, fg = COLORS[(len(self.bboxList) - 1) % len(COLORS)])
         else:
             self.noBboxes.set(False)
@@ -491,6 +511,11 @@ class LabelTool():
         else:
             x1, x2 = min(self.STATE['x'], event.x), max(self.STATE['x'], event.x)
             y1, y2 = min(self.STATE['y'], event.y), max(self.STATE['y'], event.y)
+            x1 = 0 if x1 < 0 else x1
+            y1 = 0 if y1 < 0 else y1
+            x2 = self.tkimg.width()-1 if x2 >= self.tkimg.width() else x2
+            y2 = self.tkimg.height()-1 if y2 >= self.tkimg.height() else y2
+
             self.bboxList.append((x1, y1, x2, y2, self.currDefaultBboxClassId))
             self.bboxIdList.append(self.bboxId)
             self.bboxId = None
