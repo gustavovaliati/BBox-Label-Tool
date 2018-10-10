@@ -81,6 +81,9 @@ class LabelTool():
         self.mainPanel = Canvas(self.frame, cursor='tcross')
         self.mainPanel.bind("<Button-1>", self.mouseClick)
         self.mainPanel.bind("<Motion>", self.mouseMove)
+        self.parent.bind("<MouseWheel>", self.mouseWheel) #windows
+        self.parent.bind("<Button-4>", self.mouseWheel) #linux
+        self.parent.bind("<Button-5>", self.mouseWheel) #linux
         self.parent.bind("<Key>", self.keyPressed)
         self.parent.bind("<Escape>", self.cancelBBox)  # press <Espace> to cancel current bbox
         self.parent.bind("s", self.cancelBBox)
@@ -159,6 +162,13 @@ class LabelTool():
         self.classes = self.loadClasses(CLASSES_FILE_PATH)
         self.currDefaultBboxClassId = 0
         self.updateMarkingClass(self.currDefaultBboxClassId)
+
+    def mouseWheel(self, event):
+        if event.num == 5 or event.delta == -120:
+            self.prevImage()
+        if event.num == 4 or event.delta == 120:
+            self.nextImage()
+
 
     def getNextLayoutRow(self):
         self.currLayoutRow += 1
