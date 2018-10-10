@@ -16,7 +16,7 @@ from PIL import Image, ImageTk
 import os, shutil, glob, random, sys
 
 # colors for the bboxes
-COLORS = ['red', 'blue', 'yellow', 'pink', 'cyan', 'green', 'black']
+COLORS = ['red', 'blue', 'pink', 'cyan', 'green', 'yellow', 'black' ]
 # image sizes for the examples
 # SIZE = 256, 256
 CLASSES_FILE_PATH = './classes.txt'
@@ -61,7 +61,6 @@ class LabelTool():
         self.bboxIdList = []
         self.bboxId = None
         self.bboxList = []
-        self.bboxClassList = []
 
         self.hl = None
         self.vl = None
@@ -117,7 +116,7 @@ class LabelTool():
 
         self.lbClassesList = Label(self.frame, text = 'Class List:')
         self.lbClassesList.grid(row = self.getNextLayoutRow(), column = 2,  sticky = W+N)
-        self.listboxClasses = Listbox(self.frame, width = 22, height = 6)
+        self.listboxClasses = Listbox(self.frame, width = 22, height = 8)
         self.listboxClasses.grid(row = self.getNextLayoutRow(), column = 2, sticky = N)
         self.listboxClasses.bind('<<ListboxSelect>>', self.listboxClassesSelected)
 
@@ -253,7 +252,6 @@ class LabelTool():
         tmp = [int(t.strip()) for t in self.setManualBBoxEntry.get().split()]
         if(len(tmp) == 4):
             self.bboxList.append(tuple(tmp))
-            self.bboxClassList.append(self.currDefaultBboxClassId)
 
             tmpId = self.mainPanel.create_rectangle(tmp[0], tmp[1], \
                                                         tmp[2], tmp[3], \
@@ -261,7 +259,7 @@ class LabelTool():
                                                         outline = COLORS[(len(self.bboxList)-1) % len(COLORS)])
             self.bboxIdList.append(tmpId)
             print(len(self.bboxIdList))
-            self.listbox.insert(END, '%d: (%d, %d) -> (%d, %d)' %(len(self.bboxIdList), tmp[0], tmp[1], tmp[2], tmp[3]))
+            self.listbox.insert(END, '%d:(%d,%d,%d,%d)[%d]' %(len(self.bboxIdList), tmp[0], tmp[1], tmp[2], tmp[3], self.currDefaultBboxClassId))
             self.listbox.itemconfig(len(self.bboxList) - 1, fg = COLORS[(len(self.bboxList) - 1) % len(COLORS)])
 
     def keyPressed(self, event=None):
@@ -308,9 +306,9 @@ class LabelTool():
         self.listboxClasses.delete(0,END)
         for id, cl in enumerate(self.classes):
             if id == class_id:
-                self.listboxClasses.insert(END, '->'+cl)
+                self.listboxClasses.insert(END, '->[{}]'.format(id) + cl)
             else:
-                self.listboxClasses.insert(END, cl)
+                self.listboxClasses.insert(END, '[{}]'.format(id) + cl)
 
     def setBBoxClass(self, classId):
         if classId >= self.listboxClasses.size():
@@ -409,9 +407,7 @@ class LabelTool():
                         #Seems like the current label file is in the old format. We need to add the class to it, which the default is 0.
                         defaultClass = 0
                         tmp.append(defaultClass) #adding default class zero as last element.
-                        self.bboxClassList.append(defaultClass)
-                    else:
-                        self.bboxClassList.append(tmp[4]) #the class is present in the annotation file.
+
                     x1, y1, x2, y2, classId = tmp
                     x1 = 0 if x1 < 0 else x1
                     y1 = 0 if y1 < 0 else y1
@@ -423,8 +419,9 @@ class LabelTool():
                                                                 x2, y2, \
                                                                 width = 1, \
                                                                 outline = COLORS[(len(self.bboxList)-1) % len(COLORS)])
+                        self.mainPanel.create_text(x1+5, y1+5, activefill='#000fff000', fill='#fff', anchor=W, text=str(classId))
                         self.bboxIdList.append(tmpId)
-                    self.listbox.insert(END, '%d: (%d, %d) -> (%d, %d)[%d]' %(i, x1,y1,x2,y2,classId))
+                    self.listbox.insert(END, '%d:(%d,%d,%d,%d)[%d]' %(i, x1,y1,x2,y2,classId))
                     self.listbox.itemconfig(len(self.bboxList) - 1, fg = COLORS[(len(self.bboxList) - 1) % len(COLORS)])
         else:
             self.noBboxes.set(False)
@@ -519,7 +516,7 @@ class LabelTool():
             self.bboxList.append((x1, y1, x2, y2, self.currDefaultBboxClassId))
             self.bboxIdList.append(self.bboxId)
             self.bboxId = None
-            self.listbox.insert(END, '%d: (%d, %d) -> (%d, %d)[%d]' %(len(self.bboxIdList),x1, y1, x2, y2, self.currDefaultBboxClassId))
+            self.listbox.insert(END, '%d:(%d,%d,%d,%d)[%d]' %(len(self.bboxIdList),x1, y1, x2, y2, self.currDefaultBboxClassId))
             self.listbox.itemconfig(len(self.bboxIdList) - 1, fg = COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
         self.STATE['click'] = 1 - self.STATE['click']
 
@@ -539,6 +536,7 @@ class LabelTool():
                                                             event.x, event.y, \
                                                             width = 1, \
                                                             outline = COLORS[len(self.bboxList) % len(COLORS)])
+            # self.mainPanel.create_text(self.STATE['x'], self.STATE['y'], anchor=W, text=self.classes[self.currDefaultBboxClassId])
 
     def cancelBBox(self, event):
         if 1 == self.STATE['click']:
