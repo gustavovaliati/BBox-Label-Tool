@@ -163,12 +163,16 @@ class LabelTool():
         self.currDefaultBboxClassId = 0
         self.updateMarkingClass(self.currDefaultBboxClassId)
 
+        self.topViewLine = None
+        self.smallLine = None
+
+        # self.mainPanel.create_line(15, 25, 200, 25)
+
     def mouseWheel(self, event):
         if event.num == 5 or event.delta == -120:
             self.prevImage()
         if event.num == 4 or event.delta == 120:
             self.nextImage()
-
 
     def getNextLayoutRow(self):
         self.currLayoutRow += 1
@@ -269,7 +273,7 @@ class LabelTool():
                                                         outline = COLORS[(len(self.bboxList)-1) % len(COLORS)])
             self.bboxIdList.append(tmpId)
             print(len(self.bboxIdList))
-            self.listbox.insert(END, '%d:(%d,%d,%d,%d)[%d]' %(len(self.bboxIdList), tmp[0], tmp[1], tmp[2], tmp[3], self.currDefaultBboxClassId))
+            self.listbox.insert(END, '%d:(%d,%d,%d,%d)[%d]' %(len(self.bboxIdList), tmp[0], tmp[1], tmp[2], tmp[3], self.currDefaultBboxClassId+1))
             self.listbox.itemconfig(len(self.bboxList) - 1, fg = COLORS[(len(self.bboxList) - 1) % len(COLORS)])
 
     def keyPressed(self, event=None):
@@ -316,9 +320,9 @@ class LabelTool():
         self.listboxClasses.delete(0,END)
         for id, cl in enumerate(self.classes):
             if id == class_id:
-                self.listboxClasses.insert(END, '->[{}]'.format(id) + cl)
+                self.listboxClasses.insert(END, '->[{}]'.format(id+1) + cl)
             else:
-                self.listboxClasses.insert(END, '[{}]'.format(id) + cl)
+                self.listboxClasses.insert(END, '[{}]'.format(id+1) + cl)
 
     def setBBoxClass(self, classId):
         if classId >= self.listboxClasses.size():
@@ -396,6 +400,23 @@ class LabelTool():
         self.darknetfilename = os.path.join(self.darknetdir, self.dirspath, labelname)
 
         self.reloadClassList()
+
+        topViewLineCoords = (0,379,639,379)
+        if not self.topViewLine:
+            self.topViewLine = self.mainPanel.create_line(topViewLineCoords, width = 1, dash=(4, 4))
+        else:
+            self.mainPanel.delete(self.topViewLine)
+            self.topViewLine = self.mainPanel.create_line(topViewLineCoords, width = 1, dash=(4, 4))
+
+        smallPedestriansCoords = (0,50,639,50)
+        if not self.smallLine:
+            self.smallLine = self.mainPanel.create_line(smallPedestriansCoords, width = 1, dash=(4, 4))
+        else:
+            self.mainPanel.delete(self.smallLine)
+            self.smallLine = self.mainPanel.create_line(smallPedestriansCoords, width = 1, dash=(4, 4))
+
+
+
         return self.reloadBboxListbox()
 
     def reloadBboxListbox(self):
@@ -429,9 +450,9 @@ class LabelTool():
                                                                 x2, y2, \
                                                                 width = 1, \
                                                                 outline = COLORS[(len(self.bboxList)-1) % len(COLORS)])
-                        self.mainPanel.create_text(x1+5, y1+5, activefill='#000fff000', fill='#fff', anchor=W, text=str(classId))
+                        self.mainPanel.create_text(x1+5, y1+5, activefill='#000fff000', fill='#fff', anchor=W, text=str(classId+1))
                         self.bboxIdList.append(tmpId)
-                    self.listbox.insert(END, '%d:(%d,%d,%d,%d)[%d]' %(i, x1,y1,x2,y2,classId))
+                    self.listbox.insert(END, '%d:(%d,%d,%d,%d)[%d]' %(i, x1,y1,x2,y2,classId+1))
                     self.listbox.itemconfig(len(self.bboxList) - 1, fg = COLORS[(len(self.bboxList) - 1) % len(COLORS)])
         else:
             self.noBboxes.set(False)
@@ -526,7 +547,7 @@ class LabelTool():
             self.bboxList.append((x1, y1, x2, y2, self.currDefaultBboxClassId))
             self.bboxIdList.append(self.bboxId)
             self.bboxId = None
-            self.listbox.insert(END, '%d:(%d,%d,%d,%d)[%d]' %(len(self.bboxIdList),x1, y1, x2, y2, self.currDefaultBboxClassId))
+            self.listbox.insert(END, '%d:(%d,%d,%d,%d)[%d]' %(len(self.bboxIdList),x1, y1, x2, y2, self.currDefaultBboxClassId+1))
             self.listbox.itemconfig(len(self.bboxIdList) - 1, fg = COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
         self.STATE['click'] = 1 - self.STATE['click']
 
@@ -546,7 +567,6 @@ class LabelTool():
                                                             event.x, event.y, \
                                                             width = 1, \
                                                             outline = COLORS[len(self.bboxList) % len(COLORS)])
-            # self.mainPanel.create_text(self.STATE['x'], self.STATE['y'], anchor=W, text=self.classes[self.currDefaultBboxClassId])
 
     def cancelBBox(self, event):
         if 1 == self.STATE['click']:
