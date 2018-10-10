@@ -145,7 +145,7 @@ class LabelTool():
         self.nextBtn.pack(side = LEFT, padx = 5, pady = 3)
         self.progLabel = Label(self.ctrPanel, text = "Progress:     /    ")
         self.progLabel.pack(side = LEFT, padx = 5)
-        self.tmpLabel = Label(self.ctrPanel, text = "Go to Image No.")
+        self.tmpLabel = Label(self.ctrPanel, text = "Go to (Frame Nr or Img Name)")
         self.tmpLabel.pack(side = LEFT, padx = 5)
         self.idxEntry = Entry(self.ctrPanel, width = 5)
         self.idxEntry.pack(side = LEFT)
@@ -386,6 +386,7 @@ class LabelTool():
     def loadImage(self):
         # load image
         self.imagepath = self.imageList[self.cur - 1]
+        print('Loading image {}: '.format(self.cur), self.imagepath)
         self.img = Image.open(self.imagepath)
         self.tkimg = ImageTk.PhotoImage(self.img)
         self.mainPanel.config(width = max(self.tkimg.width(), 400), height = max(self.tkimg.height(), 400))
@@ -650,13 +651,24 @@ class LabelTool():
                 self.btnNextNoBBox.config(state="normal")
                 return
 
+    def findImageIdxByName(self,name):
+        print('Searching...')
+        for index, img_path in enumerate(self.imageList):
+            if name in img_path:
+                print('Found', img_path)
+                return index+1
+        print('Couldnt find by', name)
+        return -1
 
     def gotoImage(self):
         if self.noBboxes.get() and len(self.bboxList) > 0:
             print('Conflict: Marked as [No BBoxes] but has bboxes in the list.')
             return
+        try:
+            idx = int(self.idxEntry.get()) #check if this is an integer
+        except ValueError:
+            idx = self.findImageIdxByName(self.idxEntry.get())
 
-        idx = int(self.idxEntry.get())
         if 1 <= idx and idx <= self.total:
             self.saveImage()
             self.cur = idx
