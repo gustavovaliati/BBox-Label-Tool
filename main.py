@@ -61,6 +61,7 @@ class LabelTool():
         self.bboxIdList = []
         self.bboxId = None
         self.bboxList = []
+        self.classLabelIdList = []
 
         self.hl = None
         self.vl = None
@@ -265,6 +266,7 @@ class LabelTool():
     def setManualBBox(self, event=None):
         tmp = [int(t.strip()) for t in self.setManualBBoxEntry.get().split()]
         if(len(tmp) == 4):
+            tmp.append(self.currDefaultBboxClassId)
             self.bboxList.append(tuple(tmp))
 
             tmpId = self.mainPanel.create_rectangle(tmp[0], tmp[1], \
@@ -272,8 +274,11 @@ class LabelTool():
                                                         width = 1, \
                                                         outline = COLORS[(len(self.bboxList)-1) % len(COLORS)])
             self.bboxIdList.append(tmpId)
-            print(len(self.bboxIdList))
-            self.listbox.insert(END, '%d:(%d,%d,%d,%d)[%d]' %(len(self.bboxIdList), tmp[0], tmp[1], tmp[2], tmp[3], self.currDefaultBboxClassId+1))
+
+            textId = self.mainPanel.create_text(tmp[0]+5, tmp[1]+5, activefill='#000fff000', fill='#fff', anchor=W, text=str(self.currDefaultBboxClassId+1))
+            self.classLabelIdList.append(textId)
+
+            self.listbox.insert(END, '%d:(%d,%d,%d,%d)[%d]' %(len(self.bboxIdList), tmp[0], tmp[1], tmp[2], tmp[3], tmp[4]+1))
             self.listbox.itemconfig(len(self.bboxList) - 1, fg = COLORS[(len(self.bboxList) - 1) % len(COLORS)])
 
     def keyPressed(self, event=None):
@@ -338,7 +343,6 @@ class LabelTool():
             self.bboxList.pop(bbox_index)
             bbox[4] = classId
             self.bboxList.insert(bbox_index, tuple(bbox))
-            print(self.bboxList)
             self.saveImage()
             self.reloadClassList(classId)
             self.reloadBboxListbox()
@@ -451,8 +455,11 @@ class LabelTool():
                                                                 x2, y2, \
                                                                 width = 1, \
                                                                 outline = COLORS[(len(self.bboxList)-1) % len(COLORS)])
-                        self.mainPanel.create_text(x1+5, y1+5, activefill='#000fff000', fill='#fff', anchor=W, text=str(classId+1))
                         self.bboxIdList.append(tmpId)
+
+                        textId = self.mainPanel.create_text(x1+5, y1+5, activefill='#000fff000', fill='#fff', anchor=W, text=str(classId+1))
+                        self.classLabelIdList.append(textId)
+
                     self.listbox.insert(END, '%d:(%d,%d,%d,%d)[%d]' %(i, x1,y1,x2,y2,classId+1))
                     self.listbox.itemconfig(len(self.bboxList) - 1, fg = COLORS[(len(self.bboxList) - 1) % len(COLORS)])
         else:
@@ -550,6 +557,9 @@ class LabelTool():
             self.bboxId = None
             self.listbox.insert(END, '%d:(%d,%d,%d,%d)[%d]' %(len(self.bboxIdList),x1, y1, x2, y2, self.currDefaultBboxClassId+1))
             self.listbox.itemconfig(len(self.bboxIdList) - 1, fg = COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
+            textId = self.mainPanel.create_text(self.STATE['x']+5, self.STATE['y']+5, activefill='#000fff000', fill='#fff', anchor=W, text=str(self.currDefaultBboxClassId+1))
+            self.classLabelIdList.append(textId)
+
         self.STATE['click'] = 1 - self.STATE['click']
 
     def mouseMove(self, event):
@@ -589,6 +599,9 @@ class LabelTool():
         self.bboxList.pop(idx)
         self.listbox.delete(idx)
 
+        self.mainPanel.delete(self.classLabelIdList[idx])
+        self.classLabelIdList.pop(idx)
+
     def delBBox(self):
         sel = self.listbox.curselection()
         if len(sel) != 1 :
@@ -617,6 +630,10 @@ class LabelTool():
         self.listbox.delete(0, len(self.bboxList))
         self.bboxIdList = []
         self.bboxList = []
+
+        for id in self.classLabelIdList:
+            self.mainPanel.delete(id)
+        self.classLabelIdList = []
 
     def prevImage(self, event = None):
         if self.noBboxes.get() and len(self.bboxList) > 0:
