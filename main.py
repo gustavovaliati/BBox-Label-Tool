@@ -98,7 +98,7 @@ class LabelTool():
         self.parent.bind("v", self.nextBBoxOverlap)
         self.parent.bind("p", self.toggleNoBboxes)
         self.parent.bind("f", self.toggleHideOtherBboxes)
-        self.parent.bind("b", self.toggleBboxSelector)
+        self.parent.bind("r", self.toggleBboxSelector)
         self.parent.bind("m", self.setManualBBox)
         self.parent.bind("o", self.nextNoBboxImage)
         self.mainPanel.grid(row = 1, column = 1, rowspan = 10, sticky = W+N)
@@ -306,7 +306,7 @@ class LabelTool():
                                                         outline = COLORS[(len(self.bboxList)-1) % len(COLORS)])
             self.bboxIdList.append(tmpId)
 
-            textId = self.mainPanel.create_text(tmp[0]+5, tmp[1]+5, activefill='#000fff000', fill='#fff', anchor=W, text=str(self.currDefaultBboxClassId+1))
+            textId = self.mainPanel.create_text(tmp[0]+1, tmp[1]+7, activefill='#000fff000', fill='#fff', anchor=W, text=str(self.currDefaultBboxClassId+1))
             self.classLabelIdList.append(textId)
 
             self.listbox.insert(END, '%d:(%d,%d,%d,%d)[%d]' %(len(self.bboxIdList), tmp[0], tmp[1], tmp[2], tmp[3], tmp[4]+1))
@@ -488,7 +488,7 @@ class LabelTool():
                                                                 outline = COLORS[(len(self.bboxList)-1) % len(COLORS)])
                         self.bboxIdList.append(tmpId)
 
-                        textId = self.mainPanel.create_text(x1+5, y1+5, activefill='#000fff000', fill='#fff', anchor=W, text=str(classId+1))
+                        textId = self.mainPanel.create_text(x1+1, y1+7, activefill='#000fff000', fill='#fff', anchor=W, text=str(classId+1))
                         self.classLabelIdList.append(textId)
 
                     self.listbox.insert(END, '%d:(%d,%d,%d,%d)[%d]' %(i, x1,y1,x2,y2,classId+1))
@@ -603,7 +603,7 @@ class LabelTool():
             self.bboxId = None
             self.listbox.insert(END, '%d:(%d,%d,%d,%d)[%d]' %(len(self.bboxIdList),x1, y1, x2, y2, self.currDefaultBboxClassId+1))
             self.listbox.itemconfig(len(self.bboxIdList) - 1, fg = COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
-            textId = self.mainPanel.create_text(self.STATE['x']+5, self.STATE['y']+5, activefill='#000fff000', fill='#fff', anchor=W, text=str(self.currDefaultBboxClassId+1))
+            textId = self.mainPanel.create_text(self.STATE['x']+1, self.STATE['y']+7, activefill='#000fff000', fill='#fff', anchor=W, text=str(self.currDefaultBboxClassId+1))
             self.classLabelIdList.append(textId)
 
         self.STATE['click'] = 1 - self.STATE['click']
