@@ -293,6 +293,10 @@ class LabelTool():
 
     def toggleBboxSelector(self, event=None):
         self.bboxSelector.set(not self.bboxSelector.get())
+        if self.bboxSelector.get():
+            self.mainPanel.config(cursor='arrow')
+        else:
+            self.mainPanel.config(cursor='tcross')
 
     def setManualBBox(self, event=None):
         tmp = [int(t.strip()) for t in self.setManualBBoxEntry.get().split()]
