@@ -51,6 +51,7 @@ class LabelTool():
         self.orderImageList.set(True)
         self.noBboxes = BooleanVar()
         self.hideOtherBboxes = BooleanVar()
+        self.bboxSelector = BooleanVar()
 
         # initialize mouse state
         self.STATE = {}
@@ -97,6 +98,7 @@ class LabelTool():
         self.parent.bind("v", self.nextBBoxOverlap)
         self.parent.bind("p", self.toggleNoBboxes)
         self.parent.bind("f", self.toggleHideOtherBboxes)
+        self.parent.bind("b", self.toggleBboxSelector)
         self.parent.bind("m", self.setManualBBox)
         self.parent.bind("o", self.nextNoBboxImage)
         self.mainPanel.grid(row = 1, column = 1, rowspan = 10, sticky = W+N)
@@ -126,6 +128,8 @@ class LabelTool():
 
         self.checkbHideOthersBboxes = Checkbutton(self.frame, text = "Hide other bboxes", variable = self.hideOtherBboxes)
         self.checkbHideOthersBboxes.grid(row = self.getNextLayoutRow(), column = 2, sticky = W+N)
+        self.checkbBboxSelector = Checkbutton(self.frame, text = "Bbox selector", variable = self.bboxSelector)
+        self.checkbBboxSelector.grid(row = self.getNextLayoutRow(), column = 2, sticky = W+N)
         self.setManualBBoxEntry = Entry(self.frame, width = 20)
         self.setManualBBoxEntry.grid(row = self.getNextLayoutRow(), column = 2, sticky = W+N)
         self.btnSetManualBbox = Button(self.frame, text='Manual BBox', command = self.setManualBBox)
@@ -168,6 +172,30 @@ class LabelTool():
         self.smallLine = None
 
         # self.mainPanel.create_line(15, 25, 200, 25)
+
+    def iou(self, boxA, boxB):
+        # https://www.pyimagesearch.com/2016/11/07/intersection-over-union-iou-for-object-detection/
+        # determine the (x, y)-coordinates of the intersection rectangle
+        xA = max(boxA[0], boxB[0])
+        yA = max(boxA[1], boxB[1])
+        xB = min(boxA[2], boxB[2])
+        yB = min(boxA[3], boxB[3])
+
+        # compute the area of intersection rectangle
+        interArea = max(0, xB - xA + 1) * max(0, yB - yA + 1)
+
+        # compute the area of both the prediction and ground-truth
+        # rectangles
+        boxAArea = (boxA[2] - boxA[0] + 1) * (boxA[3] - boxA[1] + 1)
+        boxBArea = (boxB[2] - boxB[0] + 1) * (boxB[3] - boxB[1] + 1)
+
+        # compute the intersection over union by taking the intersection
+        # area and dividing it by the sum of prediction + ground-truth
+        # areas - the interesection area
+        iou = interArea / float(boxAArea + boxBArea - interArea)
+
+        # return the intersection over union value
+        return iou
 
     def mouseWheel(self, event):
         if event.num == 5 or event.delta == -120:
@@ -262,6 +290,9 @@ class LabelTool():
         self.saveImage()
         self.hideOtherBboxes.set( not self.hideOtherBboxes.get() )
         self.loadImage()
+
+    def toggleBboxSelector(self, event=None):
+        self.bboxSelector.set(not self.bboxSelector.get())
 
     def setManualBBox(self, event=None):
         tmp = [int(t.strip()) for t in self.setManualBBoxEntry.get().split()]
@@ -540,8 +571,23 @@ class LabelTool():
                 os.remove(self.darknetfilename)
 
 
+    def selectBestBboxByIou(self, x, y):
+        iou_scores = []
+        for bbox in self.bboxList:
+            iou_scores.append(self.iou([x, y, x, y], bbox))
+        best_iou = max(iou_scores)
+        if best_iou == 0.0:
+            return
+
+        best_bbox_id = iou_scores.index(best_iou)
+        self.listbox.selection_clear(0, END)
+        self.listbox.selection_set(best_bbox_id)
 
     def mouseClick(self, event):
+        if self.bboxSelector.get():
+            self.selectBestBboxByIou(event.x, event.y)
+            return
+
         if self.STATE['click'] == 0:
             self.STATE['x'], self.STATE['y'] = event.x, event.y
         else:
