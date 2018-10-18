@@ -101,6 +101,7 @@ class LabelTool():
         self.parent.bind("r", self.toggleBboxSelector)
         self.parent.bind("m", self.setManualBBox)
         self.parent.bind("o", self.nextNoBboxImage)
+        self.parent.bind("x", self.delBBox)
         self.mainPanel.grid(row = 1, column = 1, rowspan = 10, sticky = W+N)
 
         # showing bbox info & delete bbox
@@ -441,19 +442,19 @@ class LabelTool():
 
         self.reloadClassList()
 
-        topViewLineCoords = (0,379,639,379)
-        if not self.topViewLine:
-            self.topViewLine = self.mainPanel.create_line(topViewLineCoords, width = 1, dash=(4, 4))
-        else:
-            self.mainPanel.delete(self.topViewLine)
-            self.topViewLine = self.mainPanel.create_line(topViewLineCoords, width = 1, dash=(4, 4))
-
-        smallPedestriansCoords = (0,50,639,50)
-        if not self.smallLine:
-            self.smallLine = self.mainPanel.create_line(smallPedestriansCoords, width = 1, dash=(4, 4))
-        else:
-            self.mainPanel.delete(self.smallLine)
-            self.smallLine = self.mainPanel.create_line(smallPedestriansCoords, width = 1, dash=(4, 4))
+        # topViewLineCoords = (0,379,639,379)
+        # if not self.topViewLine:
+        #     self.topViewLine = self.mainPanel.create_line(topViewLineCoords, width = 1, dash=(4, 4))
+        # else:
+        #     self.mainPanel.delete(self.topViewLine)
+        #     self.topViewLine = self.mainPanel.create_line(topViewLineCoords, width = 1, dash=(4, 4))
+        #
+        # smallPedestriansCoords = (0,50,639,50)
+        # if not self.smallLine:
+        #     self.smallLine = self.mainPanel.create_line(smallPedestriansCoords, width = 1, dash=(4, 4))
+        # else:
+        #     self.mainPanel.delete(self.smallLine)
+        #     self.smallLine = self.mainPanel.create_line(smallPedestriansCoords, width = 1, dash=(4, 4))
 
 
 
@@ -652,7 +653,7 @@ class LabelTool():
         self.mainPanel.delete(self.classLabelIdList[idx])
         self.classLabelIdList.pop(idx)
 
-    def delBBox(self):
+    def delBBox(self, event=None):
         sel = self.listbox.curselection()
         if len(sel) != 1 :
             return
